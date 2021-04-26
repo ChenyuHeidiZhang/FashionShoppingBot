@@ -25,7 +25,7 @@ def get_soup(url):
 
 def parse_item(url):
     print(url)
-    time.sleep(10)
+    time.sleep(5)
     soup = get_soup(url)
     img = soup.find("div", class_="c-pwa-image-viewer__img-outer")
     img_url = img.find("picture").find("img").get("src")
@@ -43,48 +43,52 @@ def parse_item(url):
         'img_repr': encoder.encode_img(img_url)
     }
 
-def crawl(df, site, csv_file):
-    soup = get_soup(site)
-    num_pages = int(soup.find("ul", class_="o-pwa-pagination").find_all("li")[1] \
-        .find("a").get("aria-label").split()[-1])
-    print("Number of pages in total:", num_pages)
+def crawl(site, csv_file):
+    id = 0
+    with open(csv_file, 'a') as f:
+        wr = csv.writer(f)
 
-    for page in range(1, num_pages+1):
-        print("Currently on page", page)
-        page_i = site + "?page={}".format(str(page))
-        soup = get_soup(page_i)
-        for tile in soup.find_all("div", class_="c-pwa-product-tile"):
-            link = tile.find("a", recursive=False)
-            href = urllib.parse.urljoin(site, link.get("href"))
-            try:
-                row = parse_item(href)
-                #df = df.append(row, ignore_index=True)
-            except urllib.error.HTTPError:
-                print("HTTP Error")
-            break
-        break
+        soup = get_soup(site)
+        num_pages = int(soup.find("ul", class_="o-pwa-pagination").find_all("li")[1] \
+            .find("a").get("aria-label").split()[-1])
+        print("Number of pages in total:", num_pages)
 
-    return df
+        for page in range(1, num_pages+1):
+            print("Currently on page", page)
+            page_i = site + "?page={}".format(str(page))
+            soup = get_soup(page_i)
+            for tile in soup.find_all("div", class_="c-pwa-product-tile"):
+                link = tile.find("a", recursive=False)
+                href = urllib.parse.urljoin(site, link.get("href"))
+                try:
+                    row = parse_item(href)
+                    id += 1
+                    row['id'] = id
+                    wr.writerow([row[col] for col in column_names])
+                except urllib.error.HTTPError:
+                    print("HTTP Error")
+
+def initialize_csv(csv_file, column_names):
+    if not os.path.exists(csv_file):
+        with open(csv_file, 'w') as f:
+            wr = csv.writer(f)
+            wr.writerow(column_names)
 
 
 if __name__ == "__main__":
     csv_file = "items.csv"
+    column_names = ['id', 'descrption', 'img_url', 'url', 'brand', 'price', 'color', 'text_repr', 'img_repr']
+    initialize_csv(csv_file, column_names)
 
-    if not os.path.exists(csv_file):
-        column_names = ['descrption', 'img_url', 'url', 'brand', 'price', 'color', 'text_repr', 'img_repr']
-        df = pd.DataFrame(columns = column_names)
-        df.to_csv(csv_file, index=True)
-    else:
-        df = pd.read_csv(csv_file, index_col=0)
-        print(df)
     site = "https://www.urbanoutfitters.com/"
     women = True
     if women:
         site += "womens-clothing"
     else:
         site += "mens-clothing"
-    df = crawl(df, site)
-    df.index.name = "id"
+
+    crawl(site, csv_file)
+
+    df = pd.read_csv(csv_file, index_col=0)
     print(df)
 
-    df.to_csv(csv_file, index=True)
