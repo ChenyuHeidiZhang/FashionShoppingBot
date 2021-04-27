@@ -25,7 +25,7 @@ def get_soup(url):
 
 def parse_item(url):
     print(url)
-    time.sleep(5)
+    time.sleep(8)
     soup = get_soup(url)
     img = soup.find("div", class_="c-pwa-image-viewer__img-outer")
     img_url = img.find("picture").find("img").get("src")
@@ -44,7 +44,7 @@ def parse_item(url):
     }
 
 def crawl(site, csv_file):
-    id = 0
+    id = 691
     with open(csv_file, 'a') as f:
         wr = csv.writer(f)
 
@@ -53,7 +53,7 @@ def crawl(site, csv_file):
             .find("a").get("aria-label").split()[-1])
         print("Number of pages in total:", num_pages)
 
-        for page in range(1, num_pages+1):
+        for page in range(10, num_pages+1):
             print("Currently on page", page)
             page_i = site + "?page={}".format(str(page))
             soup = get_soup(page_i)
@@ -67,6 +67,8 @@ def crawl(site, csv_file):
                     wr.writerow([row[col] for col in column_names])
                 except urllib.error.HTTPError:
                     print("HTTP Error")
+                except:
+                    print("Some other error")
 
 def initialize_csv(csv_file, column_names):
     if not os.path.exists(csv_file):
