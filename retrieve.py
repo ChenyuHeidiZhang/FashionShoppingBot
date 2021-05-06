@@ -2,12 +2,18 @@
 
 from model import Retriever
 
+import validators
+import os
 
 if __name__ == "__main__":
     while True:
-        input = # sentence or image
-        mode = 'img'
+        user_input = input('Please input search query (text, or url/path to image): ')
+        if os.path.exists(user_input) or validators.url(user_input):
+            mode = 'img'
+        else:
+            mode = 'text'
         src_file = 'items.csv'
-        retriever = Retriever(mode, src_file)
-        top_items = retriever.retrieve(input)
-        print(top_items)
+        retriever = Retriever(src_file)
+        top_items = retriever.retrieve(user_input, mode)
+        #print(top_items)
+        print()
