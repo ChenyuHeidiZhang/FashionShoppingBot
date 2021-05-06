@@ -16,12 +16,12 @@ class Retriever():
         emb_size_text = 768
         emb_size_img = 512
         self.df = pd.read_csv(src_file, index_col=0)
-        text_embds = self.df['text_repr'].tolist()
+        text_embs = self.df['text_repr'].tolist()
         img_embs = self.df['img_repr'].tolist()
-        self.text_embds = np.float32([recover_array(emb_str) for emb_str in text_embds])
+        self.text_embs = np.float32([recover_array(emb_str) for emb_str in text_embs])
         self.img_embs = np.float32([recover_array(emb_str) for emb_str in img_embs])
 
-        self.text_index = self.__create_faiss_index(self.text_embds, emb_size_text)
+        self.text_index = self.__create_faiss_index(self.text_embs, emb_size_text)
         self.img_index = self.__create_faiss_index(self.img_embs, emb_size_img)
 
     def __create_faiss_index(self, embeddings, embed_size, n_clusters=16):
@@ -87,10 +87,10 @@ class Retriever():
                 emb = encoder.encode_local_img(input)
             else:
                 emb = encoder.encode_img(input)
-            top_items = self.search(self.img_embds, self.img_index, emb)
+            top_items = self.search(self.img_embs, self.img_index, emb)
         else: 
             emb = encoder.encode_text(input)
-            top_items = self.search(self.text_embds, self.text_index, emb)
+            top_items = self.search(self.text_embs, self.text_index, emb)
 
         return top_items
 
