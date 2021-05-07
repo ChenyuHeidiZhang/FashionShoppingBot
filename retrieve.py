@@ -6,7 +6,10 @@ import validators
 import os
 
 if __name__ == "__main__":
+    src_file = 'items.csv'
+    print("Construsting retriever...")
     retriever = Retriever(src_file)
+    print("Done")
 
     while True:
         user_input = input('Please input search query (text, or url/path to image): ')
@@ -14,7 +17,6 @@ if __name__ == "__main__":
             mode = 'img'
         else:
             mode = 'text'
-        src_file = 'items.csv'
         top_items = retriever.retrieve(user_input, mode)
         #print(top_items)
         print()

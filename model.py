@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 
 def recover_array(emb_str):
+    '''Reconstructs the embedding array from csv entry string.'''
     arr = emb_str.strip('[]').split()
     arr = [float(x) for x in arr]
     return arr
@@ -55,20 +56,20 @@ class Retriever():
         # Search in FAISS. It returns a matrix with distances and corpus ids.
         distances, corpus_ids = index.search(q_embedding, top_k_hits)
 
-        hits = [{'corpus_id': id+1, 'score': score} for id, score in zip(corpus_ids[0], distances[0])]
+        hits = [{'corpus_id': id, 'score': score} for id, score in zip(corpus_ids[0], distances[0])]
         hits = sorted(hits, key=lambda x: x['score'], reverse=True)
 
         top_urls = []
         for hit in hits[0:top_k_hits]:
-            idx = hit['corpus_id']
-            print("\t{:.3f}\t{}".format(hit['score'], idx))
-            item = self.df.loc[idx]
+            id_num = self.df.index[hit['corpus_id']]
+            print("\t{:.3f}\t{}".format(hit['score'], id_num))
+            item = self.df.iloc[hit['corpus_id']]
             print(item['descrption'], item['url'])
             top_urls.append(item['url'])
 
         print()
         correct_hits = util.semantic_search(q_embedding, embds, top_k=top_k_hits)[0]
-        correct_hits_ids = set([hit['corpus_id']+1 for hit in correct_hits])
+        correct_hits_ids = set([hit['corpus_id'] for hit in correct_hits])
         ann_corpus_ids = set([hit['corpus_id'] for hit in hits])
         if len(ann_corpus_ids) != len(correct_hits_ids):
             print("Approximate Nearest Neighbor returned a different number of results than expected")
