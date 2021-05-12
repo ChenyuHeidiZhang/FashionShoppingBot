@@ -32,6 +32,143 @@ class Site():
     def crawl(self, csv_file):
         raise NotImplementedError
 
+class Foreover21(Site):
+    def __init__(self):
+        link = "https://www.forever21.com/"
+        self.link_female = link + "us/shop/catalog/category/f21/app-main"
+        self.link_male = link + "us/shop/catalog/category/f21/mens-clothing"
+
+    def parse_item(self, url):
+        print(url)
+        time.sleep(8)
+        soup = get_soup(url)
+        img_li = soup.find("li", class_="product-gallery__item slick-slide slick-current slick-active")
+        img_url = img_li.find("button").find("img").get("src")
+        desc = soup.find("h1", class_="pdp__name body-type--deka text-line--normal").text.strip()
+        price = soup.find("span", class_="value price__default  font-weight--bold ").text.strip()
+        color = soup.find("dive", class_="product-attribute product-attribute--color   ").find("div", class_="product-attribute__selected-value form-control-label ").find("span").text.strip()
+        return {
+            'descrption': desc,
+            'img_url': img_url,
+            'url': url,
+            'brand': "forever 21",
+            'price': price,
+            'color': color,
+            'text_repr': encoder.encode_text(desc),
+            'img_repr': encoder.encode_img(img_url)
+        }
+
+    def crawl_female(self, csv_file):
+        self.crawl(self.link_female, csv_file)
+    def crawl_male(self, csv_file):
+        self.crawl(self.link_male, csv_file)
+
+    def crawl(self, site, csv_file):
+        # 1-691: UO female
+        # 692-1059: UO male
+        # TODO: rework crawl to fit forever 21
+        pass
+        id = 1060  # 691 is the last female item
+        with open(csv_file, 'a') as f:
+            wr = csv.writer(f)
+            soup = get_soup(site)
+            num_pages = int(soup.find("div", class_="pagination__list flex flex-align-center flex-justify-center").find_all("button")[-2].text.strip())
+            print("Number of pages in total:", num_pages)
+
+            for page in range(num_pages):
+                print("Currently on page", page+1)
+                page_i = site + f"?start={page*32}&sz=32"
+                soup = get_soup(page_i)
+                for tile in soup.find_all("a", class_="product-tile__anchor product-tile__anchor--product-info"):
+                    href = urllib.parse.urljoin(site, tile.get("href"))
+                    try:
+                        row = self.parse_item(href)
+                        id += 1
+                        row['id'] = id
+                        wr.writerow([row[col] for col in column_names])
+                    except urllib.error.HTTPError:
+                        print("HTTP Error")
+                    except KeyboardInterrupt:
+                        return
+                    except:
+                        print("Some other error")
+
+class Gap(Site):
+    # TODO: fix cookie issues
+    def __init__(self):
+        link = "https://www.gap.com/"
+        self.link_female = link + "browse/division.do?cid=5643"
+        self.link_male = link + "browse/division.do?cid=5063"
+
+    def parse_item(self, url):
+        print(url)
+        time.sleep(8)
+        soup = get_soup(url)
+        img = soup.find("a", class_="hover-zoom hover-zoom-in")
+        img_url = img.get("href")
+        desc = soup.find("h1", class_="pdp-mfe-ihsmt3").text.strip()
+        price = soup.find("span", class_="pdp-pricing__selected ").text.strip()
+        color = soup.find("span", class_="swatch-label__value").text.strip()
+        return {
+            'descrption': desc,
+            'img_url': img_url,
+            'url': url,
+            'brand': "Gap",
+            'price': price,
+            'color': color,
+            'text_repr': encoder.encode_text(desc),
+            'img_repr': encoder.encode_img(img_url)
+        }
+
+    def crawl_female(self, csv_file):
+        self.crawl(self.link_female, csv_file)
+    def crawl_male(self, csv_file):
+        self.crawl(self.link_male, csv_file)
+
+    def crawl(self, site, csv_file):
+        # 1-691: UO female
+        # 692-1059: UO male
+        id = 1060 
+        with open(csv_file, 'a') as f:
+            wr = csv.writer(f)
+            
+            soup = get_soup(site)
+            categories = soup.find_all("div", class_="css-x66lwe")
+            print(f"Number of categories: {len(categories)}")
+
+            for category_root in categories:
+                category = category_root.find("div", class_="css-1m4a7xd").find("div", class_="css-1bd70hp").find("a", class_="css-11pqejk")
+                category_name = category.text.strip()
+                category_link = urllib.parse.urljoin(site, category.get("href"))
+                print(f"On category {category_name}")
+                category_page = get_soup(category_link)
+                # product grid: div class="product-card-grid__item-1-2 product-card-grid__item-lg-1-3 product-card-grid__item-xl-1-3 product-card-grid__item-1280-1-4"
+
+                num_pages = int(category_page.find("div", class_="css-1f8u5hk").find_all("span")[1].text.strip())
+                print(category_link)
+
+
+
+            # for page in range(10, num_pages+1):
+            #     print("Currently on page", page)
+            #     page_i = site + "?page={}".format(str(page))
+            #     soup = get_soup(page_i)
+            #     #for tile in soup.find_all("div", class_="c-pwa-product-tile"):
+            #     for tile in soup.find_all("div", class_="o-pwa-product-tile"):
+            #         link = tile.find("a", recursive=False)
+            #         href = urllib.parse.urljoin(site, link.get("href"))
+            #         try:
+            #             row = self.parse_item(href)
+            #             id += 1
+            #             row['id'] = id
+            #             wr.writerow([row[col] for col in column_names])
+            #         except urllib.error.HTTPError:
+            #             print("HTTP Error")
+            #         except KeyboardInterrupt:
+            #             return
+            #         except:
+            #             print("Some other error")
+
 class UO(Site):
     def __init__(self):
         link = "https://www.urbanoutfitters.com/"
@@ -233,8 +370,10 @@ if __name__ == "__main__":
     column_names = ['id', 'descrption', 'img_url', 'url', 'brand', 'price', 'color', 'text_repr', 'img_repr']
     initialize_csv(csv_file, column_names)
 
-    site = UO()
+    # site = UO()
     #site = Shein()
+    # site = Gap()
+    site = Foreover21()
     site.crawl_female(csv_file)
 
     df = pd.read_csv(csv_file, index_col=0)
