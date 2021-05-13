@@ -60,14 +60,16 @@ class Retriever():
         hits = sorted(hits, key=lambda x: x['score'], reverse=True)
 
         top_urls = []
+        rank = 1
         for hit in hits[0:top_k_hits]:
             id_num = self.df.index[hit['corpus_id']]
-            print("\t{:.3f}\t{}".format(hit['score'], id_num))
+            print("{}\t{:.3f}\t{}".format(rank, hit['score'], id_num))
             item = self.df.iloc[hit['corpus_id']]
-            print(item['descrption'], item['url'])
+            print(f"{item['descrption']}\t{item['brand']}\t{item['price']}\n{item['url']}")
             top_urls.append(item['url'])
+            rank += 1
+            print()
 
-        print()
         correct_hits = util.semantic_search(q_embedding, embds, top_k=top_k_hits)[0]
         correct_hits_ids = set([hit['corpus_id'] for hit in correct_hits])
         ann_corpus_ids = set([hit['corpus_id'] for hit in hits])
@@ -80,7 +82,7 @@ class Retriever():
         return top_urls
 
 
-    def retrieve(self, input, mode):
+    def retrieve(self, input, mode, top_k):
         ''' Retrieve items and return their urls using a vector model.
         '''
         if mode == 'img':
@@ -88,10 +90,10 @@ class Retriever():
                 emb = encoder.encode_local_img(input)
             else:
                 emb = encoder.encode_img(input)
-            top_items = self.search(self.img_embs, self.img_index, emb)
+            top_items = self.search(self.img_embs, self.img_index, emb, top_k)
         else: 
             emb = encoder.encode_text(input)
-            top_items = self.search(self.text_embs, self.text_index, emb)
+            top_items = self.search(self.text_embs, self.text_index, emb, top_k)
 
         return top_items
 
