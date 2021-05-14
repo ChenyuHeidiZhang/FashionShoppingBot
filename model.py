@@ -13,10 +13,12 @@ def recover_array(emb_str):
     return arr
 
 class Retriever():
-    def __init__(self, src_file='items.csv'):
+    def __init__(self, src_file='items.csv', vendor=None):
         emb_size_text = 768
         emb_size_img = 512
         self.df = pd.read_csv(src_file, index_col=0)
+        if vendor is not None:
+            self.df = self.df[self.df['brand'] == vendor]
         text_embs = self.df['text_repr'].tolist()
         img_embs = self.df['img_repr'].tolist()
         self.text_embs = np.float32([recover_array(emb_str) for emb_str in text_embs])

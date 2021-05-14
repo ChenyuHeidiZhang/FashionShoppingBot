@@ -7,8 +7,11 @@ import os
 
 if __name__ == "__main__":
     src_file = 'items.csv'
+    vendor = input('If search within a vendor, enter vendor name (choices: "urban outfitter", "A&F", "H&M"); otherwise, enter "none":\n')
+    if vendor == "none":
+        vendor = None
     print("Construsting retriever...")
-    retriever = Retriever(src_file)
+    retriever = Retriever(src_file, vendor)
     print("Done")
 
     while True:
