@@ -41,6 +41,66 @@ class Site():
     def crawl(self, site, csv_file):
         raise NotImplementedError
 
+class HM(Site):
+    def __init__(self):
+        self.link_female = 'https://www2.hm.com/en_us/women/products/view-all.html'
+        self.link_male = 'https://www2.hm.com/en_us/men/products/view-all.html'
+
+    def parse_item(self, site, tile):
+        # time.sleep(1)
+        link = tile.find("article").find("div", class_="image-container").find("a")
+        url = urllib.parse.urljoin(site, link.get("href"))
+        print(url)
+        img_url = 'http:' + link.find("img").get("src")
+        item_details = tile.find("article").find("div", class_="item-details")
+        desc = item_details.find("h3").find("a").text.strip()
+        price = item_details.find("strong").find("span").text.strip()
+        price = "".join(price.split()) # '$ 75' -> '$75'
+        color = item_details.find("ul").find("li").find("a").text.strip()
+        return {
+            'descrption': desc,
+            'img_url': img_url,
+            'url': url,
+            'brand': "H&M",
+            'price': price,
+            'color': color,
+            'text_repr': encoder.encode_text(desc),
+            'img_repr': encoder.encode_img(img_url)
+        }
+
+    def crawl(self, site, csv_file):
+        id = 6871
+        # 1751 - 6871 : H&M female, 6872 - X: H&M male
+        with open(csv_file, 'a') as f:
+            wr = csv.writer(f)
+            soup = get_soup(site)
+            #num_pages = int(soup.find("div", class_="pagination__list flex flex-align-center flex-justify-center").find_all("button")[-2].text.strip())
+            num_items = int(soup.find("div", class_="filter-pagination").text.strip().split()[0])
+            print("Number of items in total:", num_items)
+            
+            i = 0
+            PAGE_SIZE = 4
+
+            while (i+1)*PAGE_SIZE-1 < num_items:
+                print(f"Currently on items {i*PAGE_SIZE} to {(i+1)*PAGE_SIZE-1}")
+                page_i = site + f"?offset={i*PAGE_SIZE}&page-size={PAGE_SIZE}"
+                print(f"Page link: {page_i}")
+                soup = get_soup(page_i)
+                for tile in soup.find_all("li", class_="product-item"):
+                    href = urllib.parse.urljoin(site, tile.get("href"))
+                    try:
+                        row = self.parse_item(site, tile)
+                        id += 1
+                        row['id'] = id
+                        wr.writerow([row[col] for col in column_names])
+                    except urllib.error.HTTPError:
+                        print("HTTP Error")
+                    except KeyboardInterrupt:
+                        return
+                    except Exception as e:
+                        print(f"Some other error {e}")
+                i += 1
+
 class AF(Site):
     def __init__(self):
         self.link_female = 'https://www.abercrombie.com/shop/us/womens-new-arrivals'
@@ -160,7 +220,7 @@ def initialize_csv(csv_file, column_names):
 
 
 if __name__ == "__main__":
-    csv_file = "items_0510.csv"
+    csv_file = "items_hm.csv"
     column_names = ['id', 'descrption', 'img_url', 'url', 'brand', 'price', 'color', 'text_repr', 'img_repr']
     initialize_csv(csv_file, column_names)
 
@@ -168,9 +228,10 @@ if __name__ == "__main__":
     # site = Shein()
     # site = Gap()
     # site = Forever21()
-    site = AF()
+    site = HM()
     site.crawl_male(csv_file)
 
     df = pd.read_csv(csv_file, index_col=0)
     print(df.head())
+    print(df.tail())
 
